@@ -14,6 +14,12 @@ pub struct L2BlockMessage {
 
     /// Merkle root of all transactions in the block
     pub transactions_merkle_root: MerkleRoot,
+
+    /// Optional block body (may be omitted for lightweight announcements)
+    pub transactions: Option<Vec<Vec<u8>>>,
+
+    /// Optional block receipts root
+    pub receipts_root: Option<MerkleRoot>,
 }
 
 impl L2BlockMessage {
@@ -28,7 +34,46 @@ impl L2BlockMessage {
         Self {
             header,
             transactions_merkle_root,
+            transactions: None,
+            receipts_root: None,
         }
+    }
+
+    /// Create a new L2 block message with full transaction data
+    pub fn new_with_transactions(
+        header: L2BlockHeader,
+        transactions_merkle_root: MerkleRoot,
+        transactions: Vec<Vec<u8>>,
+        receipts_root: Option<MerkleRoot>,
+    ) -> Self {
+        debug!(
+            block_number = header.block_number,
+            timestamp = header.timestamp,
+            tx_count = transactions.len(),
+            "Creating new L2BlockMessage with transactions"
+        );
+
+        Self {
+            header,
+            transactions_merkle_root,
+            transactions: Some(transactions),
+            receipts_root,
+        }
+    }
+
+    /// Check if this block is a full block (with transactions)
+    pub fn is_full_block(&self) -> bool {
+        self.transactions.is_some()
+    }
+
+    /// Get the block number of this block
+    pub fn block_number(&self) -> u64 {
+        self.header.block_number
+    }
+
+    /// Get the parent hash of this block
+    pub fn parent_hash(&self) -> &[u8; 32] {
+        &self.header.parent_hash
     }
 }
 
@@ -70,6 +115,77 @@ impl L2BlockHeader {
     }
 }
 
+/// Block announcement message for lightweight propagation
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BlockAnnouncementMessage {
+    /// The block number being announced
+    pub block_number: u64,
+
+    /// The block's parent hash
+    pub parent_hash: [u8; 32],
+
+    /// The block's hash
+    pub block_hash: [u8; 32],
+
+    /// Whether the sender has the full block data available
+    pub has_block: bool,
+}
+
+impl BlockAnnouncementMessage {
+    /// Create a new block announcement
+    pub fn new(
+        block_number: u64,
+        parent_hash: [u8; 32],
+        block_hash: [u8; 32],
+        has_block: bool,
+    ) -> Self {
+        debug!(
+            block_number,
+            has_full_block = has_block,
+            "Creating new BlockAnnouncementMessage"
+        );
+
+        Self {
+            block_number,
+            parent_hash,
+            block_hash,
+            has_block,
+        }
+    }
+
+    /// Create an announcement from a block message
+    pub fn from_block(block: &L2BlockMessage, block_hash: [u8; 32]) -> Self {
+        Self {
+            block_number: block.header.block_number,
+            parent_hash: block.header.parent_hash,
+            block_hash,
+            has_block: block.is_full_block(),
+        }
+    }
+}
+
+/// Block request message
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BlockRequestMessage {
+    /// The hash of the requested block
+    pub block_hash: [u8; 32],
+
+    /// Whether to include full transaction data
+    pub include_transactions: bool,
+}
+
+impl BlockRequestMessage {
+    /// Create a new block request
+    pub fn new(block_hash: [u8; 32], include_transactions: bool) -> Self {
+        debug!(include_transactions, "Creating new BlockRequestMessage");
+
+        Self {
+            block_hash,
+            include_transactions,
+        }
+    }
+}
+
 // Implement verification for L2 blocks
 impl VerifiableMessage for L2BlockMessage {
     fn verify(&self) -> Result<(), P2PError> {
@@ -107,7 +223,24 @@ impl VerifiableMessage for L2BlockMessage {
             return Err(P2PError::Verification(error_msg.into()));
         }
 
-        // Additional verification would be implemented here
+        // If we have transactions, verify the merkle root matches
+        if let Some(transactions) = &self.transactions {
+            // In a real implementation, we would:
+            // 1. Calculate the merkle root from the transactions
+            // 2. Verify it matches the transactions_merkle_root
+
+            // For now, just check that we have at least one transaction
+            if transactions.is_empty() {
+                let error_msg = "Block with transactions has empty transaction list";
+                error!(
+                    block_number = self.header.block_number,
+                    error = error_msg,
+                    "Block verification failed"
+                );
+                return Err(P2PError::Verification(error_msg.into()));
+            }
+        }
+
         debug!(
             block_number = self.header.block_number,
             "L2BlockMessage verification successful"
