@@ -1,0 +1,15 @@
+[package]
+name = "network"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+
+[dependencies]
+core_crate = { path = "../core", package = "core" }
+messages = { path = "../messages" }
+tokio.workspace = true
+async-trait.workspace = true
+bytes.workspace = true
+tracing.workspace = true
+futures.workspace = true 
