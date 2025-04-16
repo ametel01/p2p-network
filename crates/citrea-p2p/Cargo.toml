@@ -1,0 +1,17 @@
+[package]
+name = "citrea-p2p"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+
+[dependencies]
+core_crate = { path = "../core", package = "core" }
+messages = { path = "../messages" }
+network = { path = "../network" }
+sync = { path = "../sync" }
+tokio.workspace = true
+tracing.workspace = true
+structopt = "0.3.26"
+dotenv = "0.15.0"
+rand = "0.8.5" 

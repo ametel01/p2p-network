@@ -4,6 +4,7 @@ members = [
     "crates/messages",
     "crates/network",
     "crates/sync",
+    "crates/citrea-p2p",
 ]
 resolver = "2"
 
