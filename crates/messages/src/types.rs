@@ -3,7 +3,10 @@ use core_crate::{NetworkMessage, P2PError, PeerId, SignedMessage, VerifiableMess
 use serde::{Deserialize, Serialize};
 use tracing::{debug, error, warn};
 
-use crate::blocks::{BlockAnnouncementMessage, BlockRequestMessage, L2BlockMessage};
+use crate::blocks::{
+    BlockAnnouncementMessage, BlockRangeRequestMessage, BlockRangeResponseMessage,
+    BlockRequestMessage, BlockResponseMessage, L2BlockMessage,
+};
 use crate::proofs::{BatchProofMessage, LightClientProofMessage, SequencerCommitmentMessage};
 use crate::transactions::EVMTransactionMessage;
 
@@ -109,8 +112,17 @@ pub enum CitreaMessage {
     /// Block announcement (lightweight block notification)
     BlockAnnouncement(BlockAnnouncementMessage),
 
-    /// Block request message
+    /// Block request message (single block)
     BlockRequest(BlockRequestMessage),
+
+    /// Block range request message (multiple sequential blocks)
+    BlockRangeRequest(BlockRangeRequestMessage),
+
+    /// Block response message (response to a block request)
+    BlockResponse(BlockResponseMessage),
+
+    /// Block range response message (response to a block range request)
+    BlockRangeResponse(BlockRangeResponseMessage),
 
     /// Sequencer commitment messages for L2 state
     SequencerCommitment(SequencerCommitmentMessage),
@@ -135,6 +147,9 @@ impl CitreaMessage {
             CitreaMessage::L2Block(_) => "L2Block",
             CitreaMessage::BlockAnnouncement(_) => "BlockAnnouncement",
             CitreaMessage::BlockRequest(_) => "BlockRequest",
+            CitreaMessage::BlockRangeRequest(_) => "BlockRangeRequest",
+            CitreaMessage::BlockResponse(_) => "BlockResponse",
+            CitreaMessage::BlockRangeResponse(_) => "BlockRangeResponse",
             CitreaMessage::SequencerCommitment(_) => "SequencerCommitment",
             CitreaMessage::BatchProof(_) => "BatchProof",
             CitreaMessage::LightClientProof(_) => "LightClientProof",
@@ -163,6 +178,30 @@ impl CitreaMessage {
     pub fn as_block_request(&self) -> Option<&BlockRequestMessage> {
         match self {
             CitreaMessage::BlockRequest(msg) => Some(msg),
+            _ => None,
+        }
+    }
+
+    /// Try to get this message as a BlockRangeRequestMessage
+    pub fn as_block_range_request(&self) -> Option<&BlockRangeRequestMessage> {
+        match self {
+            CitreaMessage::BlockRangeRequest(msg) => Some(msg),
+            _ => None,
+        }
+    }
+
+    /// Try to get this message as a BlockResponseMessage
+    pub fn as_block_response(&self) -> Option<&BlockResponseMessage> {
+        match self {
+            CitreaMessage::BlockResponse(msg) => Some(msg),
+            _ => None,
+        }
+    }
+
+    /// Try to get this message as a BlockRangeResponseMessage
+    pub fn as_block_range_response(&self) -> Option<&BlockRangeResponseMessage> {
+        match self {
+            CitreaMessage::BlockRangeResponse(msg) => Some(msg),
             _ => None,
         }
     }
@@ -205,6 +244,15 @@ impl CitreaMessage {
             CitreaMessage::L2Block(msg) => msg.verify(),
             CitreaMessage::BlockAnnouncement(_) => Ok(()), // Simple announcement, no verification needed
             CitreaMessage::BlockRequest(_) => Ok(()),      // Simple request, no verification needed
+            CitreaMessage::BlockRangeRequest(_) => Ok(()), // Simple request, no verification needed
+            CitreaMessage::BlockResponse(msg) => msg.block.verify(), // Verify the contained block
+            CitreaMessage::BlockRangeResponse(msg) => {
+                // Verify each block in the response
+                for block in &msg.blocks {
+                    block.verify()?;
+                }
+                Ok(())
+            }
             CitreaMessage::SequencerCommitment(msg) => msg.verify_signature(),
             CitreaMessage::BatchProof(msg) => msg.verify_signature(),
             CitreaMessage::LightClientProof(msg) => msg.verify(),
@@ -217,7 +265,7 @@ impl CitreaMessage {
                     Ok(())
                 }
             }
-            CitreaMessage::Custom(_msg) => Ok(()), // Custom messages don't need verification
+            CitreaMessage::Custom(_) => Ok(()), // Custom messages don't need verification
         }
     }
 }

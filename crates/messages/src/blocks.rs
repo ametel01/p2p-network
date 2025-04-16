@@ -186,6 +186,141 @@ impl BlockRequestMessage {
     }
 }
 
+/// Block range request message for requesting multiple sequential blocks
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BlockRangeRequestMessage {
+    /// The start block number of the range (inclusive)
+    pub start_block: u64,
+
+    /// The end block number of the range (inclusive)
+    pub end_block: u64,
+
+    /// Maximum number of blocks to return in a single response
+    pub max_blocks: u32,
+
+    /// Whether to include full transaction data
+    pub include_transactions: bool,
+
+    /// A unique request ID to match responses to requests
+    pub request_id: u64,
+}
+
+impl BlockRangeRequestMessage {
+    /// Create a new block range request
+    pub fn new(
+        start_block: u64,
+        end_block: u64,
+        max_blocks: u32,
+        include_transactions: bool,
+        request_id: u64,
+    ) -> Self {
+        debug!(
+            start_block,
+            end_block,
+            max_blocks,
+            include_transactions,
+            request_id,
+            "Creating new BlockRangeRequestMessage"
+        );
+
+        Self {
+            start_block,
+            end_block,
+            max_blocks,
+            include_transactions,
+            request_id,
+        }
+    }
+}
+
+/// Block response message to fulfill a block request
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BlockResponseMessage {
+    /// The block being returned
+    pub block: L2BlockMessage,
+
+    /// Optional request ID this response is for
+    pub request_id: Option<u64>,
+
+    /// Whether this is the last block in a range response
+    pub is_last: bool,
+}
+
+impl BlockResponseMessage {
+    /// Create a new block response
+    pub fn new(block: L2BlockMessage, request_id: Option<u64>, is_last: bool) -> Self {
+        debug!(
+            block_number = block.header.block_number,
+            request_id = ?request_id,
+            is_last,
+            "Creating new BlockResponseMessage"
+        );
+
+        Self {
+            block,
+            request_id,
+            is_last,
+        }
+    }
+}
+
+/// Block range response message to fulfill a block range request
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BlockRangeResponseMessage {
+    /// The blocks being returned
+    pub blocks: Vec<L2BlockMessage>,
+
+    /// The request ID this response is for
+    pub request_id: u64,
+
+    /// Whether this is the last response in the range
+    pub is_last: bool,
+
+    /// The next block number to request (if !is_last)
+    pub next_block: Option<u64>,
+}
+
+impl BlockRangeResponseMessage {
+    /// Create a new block range response
+    pub fn new(
+        blocks: Vec<L2BlockMessage>,
+        request_id: u64,
+        is_last: bool,
+        next_block: Option<u64>,
+    ) -> Self {
+        debug!(
+            block_count = blocks.len(),
+            request_id,
+            is_last,
+            next_block = ?next_block,
+            "Creating new BlockRangeResponseMessage"
+        );
+
+        Self {
+            blocks,
+            request_id,
+            is_last,
+            next_block,
+        }
+    }
+
+    /// Get the highest block number in this response
+    pub fn highest_block_number(&self) -> Option<u64> {
+        self.blocks
+            .iter()
+            .map(|block| block.header.block_number)
+            .max()
+    }
+
+    /// Get the lowest block number in this response
+    pub fn lowest_block_number(&self) -> Option<u64> {
+        self.blocks
+            .iter()
+            .map(|block| block.header.block_number)
+            .min()
+    }
+}
+
 // Implement verification for L2 blocks
 impl VerifiableMessage for L2BlockMessage {
     fn verify(&self) -> Result<(), P2PError> {

@@ -8,7 +8,10 @@ mod transactions;
 mod types;
 
 // Re-export public API
-pub use blocks::{BlockAnnouncementMessage, BlockRequestMessage, L2BlockHeader, L2BlockMessage};
+pub use blocks::{
+    BlockAnnouncementMessage, BlockRangeRequestMessage, BlockRangeResponseMessage,
+    BlockRequestMessage, BlockResponseMessage, L2BlockHeader, L2BlockMessage,
+};
 pub use proofs::{BatchProofMessage, LightClientProofMessage, SequencerCommitmentMessage};
 pub use transactions::{
     EVMTransactionMessage, EVMTransactionMessageBuilder, EVMTransactionType, GasPricing,
