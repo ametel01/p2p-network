@@ -12,4 +12,11 @@ tracing.workspace = true
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 serde.workspace = true
 serde_json.workspace = true
-bytes.workspace = true 
+bytes.workspace = true
+tokio = { version = "1.28", features = ["full"] }
+tokio-util = { version = "0.7", features = ["codec"] }
+futures = "0.3"
+async-trait = "0.1"
+rand = "0.8"
+sha2 = "0.10"
+hex = "0.4" 

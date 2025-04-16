@@ -1,4 +1,7 @@
+use rand::Rng;
 use serde::{Deserialize, Serialize};
+use sha2::{Digest, Sha256};
+use std::fmt;
 
 /// A unique identifier for a peer in the network
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
@@ -12,21 +15,36 @@ impl PeerId {
 
     /// Generate a random peer ID (useful for testing)
     pub fn random() -> Self {
-        // Simple random implementation for now
+        let mut rng = rand::thread_rng();
         let mut id = [0u8; 32];
-        for byte in id.iter_mut() {
-            *byte = (std::time::SystemTime::now()
-                .duration_since(std::time::UNIX_EPOCH)
-                .unwrap()
-                .subsec_nanos()
-                % 255) as u8;
-        }
+        rng.fill(&mut id);
+        Self(id)
+    }
+
+    /// Create a peer ID from a public key
+    pub fn from_public_key(public_key: &[u8]) -> Self {
+        let mut hasher = Sha256::new();
+        hasher.update(public_key);
+        let result = hasher.finalize();
+        let mut id = [0u8; 32];
+        id.copy_from_slice(&result);
         Self(id)
     }
 
     /// Get the underlying bytes
     pub fn as_bytes(&self) -> &[u8; 32] {
         &self.0
+    }
+
+    /// Convert to hex string for display
+    pub fn to_hex(&self) -> String {
+        hex::encode(self.0)
+    }
+}
+
+impl fmt::Display for PeerId {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.to_hex())
     }
 }
 

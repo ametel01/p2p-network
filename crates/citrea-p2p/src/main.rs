@@ -123,6 +123,11 @@ fn create_p2p_config(opt: &Opt) -> P2PConfig {
         max_connections: opt.max_connections,
         bootstrap_nodes,
         enable_discovery: opt.enable_discovery,
+        ping_interval: 30,
+        connection_timeout: 120,
+        enable_encryption: true,
+        protocol_version: 1,
+        capabilities: vec!["basic".to_string()],
     }
 }
 
