@@ -247,6 +247,7 @@ dependencies = [
  "core",
  "serde",
  "serde_json",
+ "tracing",
 ]
 
 [[package]]
