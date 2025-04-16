@@ -10,6 +10,23 @@ use crate::transactions::EVMTransactionMessage;
 /// Protocol version for the messaging system
 pub const PROTOCOL_VERSION: u16 = 1;
 
+/// Custom message for application-specific data
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Custom {
+    /// Message type identifier
+    pub message_type: String,
+
+    /// Custom data payload
+    pub data: Vec<u8>,
+}
+
+impl Custom {
+    /// Create a new custom message
+    pub fn new(message_type: String, data: Vec<u8>) -> Self {
+        Self { message_type, data }
+    }
+}
+
 /// The main message envelope that covers all possible message types in the Citrea network.
 ///
 /// This struct serves as the top-level container for all message types that can be
@@ -106,6 +123,9 @@ pub enum CitreaMessage {
 
     /// EVM transaction messages
     EVMTransaction(EVMTransactionMessage),
+
+    /// Custom messages
+    Custom(Custom),
 }
 
 impl CitreaMessage {
@@ -119,6 +139,7 @@ impl CitreaMessage {
             CitreaMessage::BatchProof(_) => "BatchProof",
             CitreaMessage::LightClientProof(_) => "LightClientProof",
             CitreaMessage::EVMTransaction(_) => "EVMTransaction",
+            CitreaMessage::Custom(_) => "Custom",
         }
     }
 
@@ -196,6 +217,7 @@ impl CitreaMessage {
                     Ok(())
                 }
             }
+            CitreaMessage::Custom(_msg) => Ok(()), // Custom messages don't need verification
         }
     }
 }

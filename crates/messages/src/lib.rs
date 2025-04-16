@@ -13,7 +13,7 @@ pub use proofs::{BatchProofMessage, LightClientProofMessage, SequencerCommitment
 pub use transactions::{
     EVMTransactionMessage, EVMTransactionMessageBuilder, EVMTransactionType, GasPricing,
 };
-pub use types::{CitreaMessage, MessageEnvelope, PROTOCOL_VERSION};
+pub use types::{CitreaMessage, Custom, MessageEnvelope, PROTOCOL_VERSION};
 
 /// Default chain ID for the Citrea network
 pub const DEFAULT_CHAIN_ID: u64 = 2424;
